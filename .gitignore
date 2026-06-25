@@ -1,0 +1,47 @@
+# Build artifacts
+ingestion-gateway/server
+ml-anomaly-engine/models/*.joblib
+ml-anomaly-engine/synthetic_data/*.csv
+
+# Python
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Databases
+*.db
+postgres_data/
+redis_data/
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+
+# Go
+bin/
+*.test
+*.out
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+
+# Coverage reports
+coverage.out
+coverage.html
+
+# Docker
+*.pid
