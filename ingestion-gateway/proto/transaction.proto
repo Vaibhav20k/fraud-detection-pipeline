@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package transaction;
+
+option go_package = "github.com/yourusername/fintech-pipeline/ingestion-gateway/proto";
+// ==========================================
+// Transaction Request
+// ==========================================
+message TransactionRequest {
+
+  string user_id = 1;
+
+  double amount = 2;
+
+  string currency = 3;
+
+  string payment_method = 4;
+
+  string payment_identifier = 5;
+
+  string merchant = 6;
+
+  string receiver_account = 7;
+
+  string location = 8;
+
+  string ip_address = 9;
+
+  string device_id = 10;
+}
+
+// ==========================================
+// Transaction Response
+// ==========================================
+message TransactionResponse {
+
+  string transaction_id = 1;
+
+  string status = 2;
+
+  string message = 3;
+}
+
+// ==========================================
+// Transaction Service
+// ==========================================
+service TransactionService {
+
+  rpc SubmitTransaction(TransactionRequest)
+      returns (TransactionResponse);
+
+}
