@@ -1,6 +1,6 @@
 module github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway
 
-go 1.26.4
+go 1.26
 
 require (
 	google.golang.org/grpc v1.82.0

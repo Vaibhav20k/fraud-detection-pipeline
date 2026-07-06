@@ -4,7 +4,14 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/handler"
+	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/postgres"
+	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/service"
+
+	pb "github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/proto"
+
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 type GRPCServer struct {
@@ -13,8 +20,24 @@ type GRPCServer struct {
 }
 
 func New(port string) *GRPCServer {
+
+	grpcServer := grpc.NewServer()
+
+	repo := postgres.NewTransactionRepository()
+
+	svc := service.NewTransactionService(repo)
+
+	handler := handler.NewTransactionHandler(svc)
+
+	pb.RegisterTransactionServiceServer(
+		grpcServer,
+		handler,
+	)
+
+	reflection.Register(grpcServer)
+
 	return &GRPCServer{
-		server: grpc.NewServer(),
+		server: grpcServer,
 		port:   port,
 	}
 }
