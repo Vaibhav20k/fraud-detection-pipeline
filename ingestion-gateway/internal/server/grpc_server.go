@@ -53,11 +53,10 @@ func New(cfg *config.Config) *GRPCServer {
 		panic(err)
 	}
 
-	// Transaction service
 	svc := service.NewTransactionService(
-		transactionRepo,
-		producer,
-		baselineUpdater,
+	transactionRepo,
+	producer,
+	baselineUpdater,
 	)
 
 	// Handler

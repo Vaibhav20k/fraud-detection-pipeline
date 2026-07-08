@@ -6,6 +6,7 @@ import (
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/events"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/kafka"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/repository"
+
 	pb "github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/proto"
 )
 
@@ -33,41 +34,59 @@ func (s *TransactionService) SubmitTransaction(
 	req *pb.TransactionRequest,
 ) (*pb.TransactionResponse, error) {
 
+	// ---------------------------------------------------------
 	// Step 1: Persist transaction
+	// ---------------------------------------------------------
+
 	transactionID, err := s.repository.SaveTransaction(ctx, req)
 	if err != nil {
 		return nil, err
 	}
 
+	// ---------------------------------------------------------
 	// Step 2: Update user baseline
+	// ---------------------------------------------------------
+
 	if s.updater != nil {
 		if err := s.updater.UpdateBaseline(ctx, req.UserId); err != nil {
 			return nil, err
 		}
 	}
 
+	// ---------------------------------------------------------
 	// Step 3: Publish Kafka event
+	// ---------------------------------------------------------
+
 	event := events.TransactionEvent{
 		TransactionID:     transactionID,
 		UserID:            req.UserId,
+		Timestamp:         req.Timestamp,
+
 		Amount:            req.Amount,
 		Currency:          req.Currency,
+		TransactionType:   req.TransactionType,
+
 		PaymentMethod:     req.PaymentMethod,
 		PaymentIdentifier: req.PaymentIdentifier,
+
 		Merchant:          req.Merchant,
+		MerchantCategory:  req.MerchantCategory,
 		ReceiverAccount:   req.ReceiverAccount,
+
 		Location:          req.Location,
 		IPAddress:         req.IpAddress,
 		DeviceID:          req.DeviceId,
-		Status:            "RECEIVED",
-		Timestamp:         req.Timestamp,
-		TransactionType:   req.TransactionType,
-		MerchantCategory:  req.MerchantCategory,
+
+		Status: "RECEIVED",
 	}
 
 	if err := s.producer.PublishJSON(transactionID, event); err != nil {
 		return nil, err
 	}
+
+	// ---------------------------------------------------------
+	// Step 4: Return response
+	// ---------------------------------------------------------
 
 	return &pb.TransactionResponse{
 		TransactionId: transactionID,
