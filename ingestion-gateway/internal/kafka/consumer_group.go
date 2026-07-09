@@ -10,11 +10,14 @@ import (
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/events"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/features"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/repository"
+	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/ml"
 )
 
 type ConsumerGroupHandler struct {
 	baselineRepo repository.BaselineRepository
-	historyRepo repository.HistoryRepository
+	historyRepo  repository.HistoryRepository
+
+	mlClient *ml.Client
 }
 
 func (h *ConsumerGroupHandler) Setup(
@@ -57,6 +60,44 @@ func (h *ConsumerGroupHandler) ConsumeClaim(
 		// Create feature pipeline
 		pipeline := features.NewPipeline(csvExporter)
 
+		// ---------------------------------------------------------
+	// Run ML Prediction
+	// ---------------------------------------------------------
+
+	prediction, err := h.mlClient.Predict(
+		context.Background(),
+		featureVector,
+	)
+
+	if err != nil {
+
+		log.Printf(
+			"ML prediction failed: %v",
+			err,
+		)
+
+	} else {
+
+		log.Println("========== ML PREDICTION ==========")
+		log.Printf(
+			"Fraud Probability : %.4f",
+			prediction.FraudProbability,
+		)
+		log.Printf(
+			"Prediction        : %v",
+			prediction.Prediction,
+		)
+		log.Printf(
+			"Threshold         : %.4f",
+			prediction.Threshold,
+		)
+		log.Printf(
+			"Model Version     : %s",
+			prediction.ModelVersion,
+		)
+		log.Println("===================================")
+	}
+
 		// Export feature vector
 		if err := pipeline.Process(featureVector); err != nil {
 			log.Printf("failed to export feature vector: %v", err)
@@ -89,7 +130,11 @@ func (c *Consumer) ConsumeGroup() error {
 		return err
 	}
 
-	handler := &ConsumerGroupHandler{baselineRepo: c.baselineRepo, historyRepo: c.historyRepo}
+	handler := &ConsumerGroupHandler{
+	baselineRepo: c.baselineRepo,
+	historyRepo:  c.historyRepo,
+	mlClient:     ml.NewClient(""),
+	}
 	log.Println("Joining consumer group...")
 
 	for {
