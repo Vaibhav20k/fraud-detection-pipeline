@@ -4,14 +4,18 @@ import (
 	"log"
 
 	"github.com/IBM/sarama"
+
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/repository"
 )
 
 type Consumer struct {
 	consumer sarama.Consumer
 	topic    string
+
 	baselineRepo repository.BaselineRepository
-	historyRepo repository.HistoryRepository
+	historyRepo  repository.HistoryRepository
+
+	predictionRepo repository.FraudPredictionRepository
 }
 
 func NewConsumer(
@@ -19,20 +23,26 @@ func NewConsumer(
 	topic string,
 	baselineRepo repository.BaselineRepository,
 	historyRepo repository.HistoryRepository,
+	predictionRepo repository.FraudPredictionRepository,
 ) (*Consumer, error) {
 
-	c, err := sarama.NewConsumer(brokers, nil)
+	c, err := sarama.NewConsumer(
+		brokers,
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
 
 	log.Println("Kafka consumer connected.")
-
-	return &Consumer{
+		return &Consumer{
 		consumer: c,
-		topic:    topic,
+		topic: topic,
+
 		baselineRepo: baselineRepo,
-		historyRepo: historyRepo,
+		historyRepo:  historyRepo,
+
+		predictionRepo: predictionRepo,
 	}, nil
 }
 
@@ -49,7 +59,10 @@ func (c *Consumer) Consume() error {
 
 	defer partitionConsumer.Close()
 
-	log.Printf("Listening on topic %s...\n", c.topic)
+	log.Printf(
+		"Listening on topic %s...\n",
+		c.topic,
+	)
 
 	for message := range partitionConsumer.Messages() {
 

@@ -24,12 +24,14 @@ func main() {
 	// Create repository implementations
 	baselineRepo := postgres.NewBaselineRepository(db)
 	historyRepo := postgres.NewHistoryRepository(db)
+	predictionRepo := postgres.NewFraudPredictionRepository(db)
 
 	consumer, err := kafka.NewConsumer(
 		cfg.KafkaBrokers,
 		cfg.KafkaTopic,
 		baselineRepo,
 		historyRepo,
+		predictionRepo,
 	)
 	if err != nil {
 		log.Fatal(err)
