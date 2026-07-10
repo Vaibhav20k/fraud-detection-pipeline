@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	ServerPort string
+	HTTPPort   string
 
 	DBHost     string
 	DBPort     string
@@ -26,6 +27,7 @@ func Load() (*Config, error) {
 
 	cfg := &Config{
 		ServerPort: os.Getenv("SERVER_PORT"),
+		HTTPPort: os.Getenv("HTTP_PORT"),
 
 		DBHost:     os.Getenv("DB_HOST"),
 		DBPort:     os.Getenv("DB_PORT"),
@@ -39,6 +41,10 @@ func Load() (*Config, error) {
 	if cfg.ServerPort == "" {
 		cfg.ServerPort = "50051"
 	}
+	
+	if cfg.HTTPPort == "" {
+	cfg.HTTPPort = "8080"
+}
 
 	if cfg.DBHost == "" {
 		return nil, fmt.Errorf("DB_HOST is required")
