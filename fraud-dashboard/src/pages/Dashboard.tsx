@@ -31,12 +31,13 @@ export default function Dashboard() {
   } = usePredictions();
 
   const predictions: Prediction[] =
-    predictionData?.map((p) => ({
-      id: p.transactionID,
-      user: p.userID,
-      probability: p.fraudProbability,
-      decision: p.decision as Prediction["decision"],
-    })) ?? [];
+  predictionData?.map((p) => ({
+    id: p.transactionID,
+    user: p.userID,
+    probability: p.fraudProbability,
+    decision: p.decision as Prediction["decision"],
+    riskFlags: p.riskFlags ?? [],
+  })) ?? [];
 
   const kpis: KpiMetric[] = [
     {

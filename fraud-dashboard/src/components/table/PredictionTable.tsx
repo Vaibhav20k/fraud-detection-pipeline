@@ -10,6 +10,7 @@ const COLUMNS = [
   "User Identifier",
   "Risk Prob.",
   "Decision",
+  "Risk Flags",
   "Action",
 ];
 
@@ -106,6 +107,26 @@ export default function PredictionTable({ data = [] }: Props) {
                     tone={decisionTone(row.decision)}
                   />
                 </td>
+
+                <td className="px-lg py-md">
+                  <div className="flex flex-wrap gap-1 max-w-[240px]">
+                    {row.riskFlags?.length ? (
+                      row.riskFlags.map((flag) => (
+                        <span
+                          key={flag}
+                          className="px-2 py-1 rounded-full text-[10px] font-semibold bg-error/10 text-error"
+                        >
+                          {flag}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-on-surface-variant text-xs">
+                        None
+                      </span>
+                    )}
+                  </div>
+                </td>
+
                 <td className="px-lg py-md text-right">
                   <button
                     type="button"

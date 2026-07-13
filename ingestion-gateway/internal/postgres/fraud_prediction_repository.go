@@ -79,7 +79,8 @@ func (r *FraudPredictionRepository) GetAllPredictions(
 			prediction,
 			decision,
 			threshold,
-			model_version
+			model_version,
+			risk_flags
 		FROM fraud_predictions
 		ORDER BY created_at DESC
 		`,
@@ -93,7 +94,10 @@ func (r *FraudPredictionRepository) GetAllPredictions(
 
 	for rows.Next() {
 
-		var p repository.FraudPrediction
+		var (
+			p repository.FraudPrediction
+			riskFlagsJSON []byte
+		)
 
 		err := rows.Scan(
 			&p.TransactionID,
@@ -103,12 +107,25 @@ func (r *FraudPredictionRepository) GetAllPredictions(
 			&p.Decision,
 			&p.Threshold,
 			&p.ModelVersion,
+			&riskFlagsJSON,
 		)
 		if err != nil {
 			return nil, err
 		}
 
-		predictions = append(predictions, p)
+		if len(riskFlagsJSON) > 0 {
+			if err := json.Unmarshal(
+				riskFlagsJSON,
+				&p.RiskFlags,
+			); err != nil {
+				return nil, err
+			}
+		}
+
+		predictions = append(
+			predictions,
+			p,
+		)
 	}
 
 	return predictions, rows.Err()
@@ -116,7 +133,7 @@ func (r *FraudPredictionRepository) GetAllPredictions(
 
 func (r *FraudPredictionRepository) GetDashboardSummary(
 	ctx context.Context,
-	) (repository.DashboardSummary, error) {
+) (repository.DashboardSummary, error) {
 
 	var summary repository.DashboardSummary
 
@@ -125,18 +142,33 @@ func (r *FraudPredictionRepository) GetDashboardSummary(
 		`
 		SELECT
 			COUNT(*) AS total_transactions,
-			COUNT(*) FILTER (WHERE prediction = true) AS fraudulent,
-			COUNT(*) FILTER (WHERE decision = 'REVIEW') AS review,
-			COUNT(*) FILTER (WHERE decision = 'ALLOW') AS allowed,
+
+			COUNT(*) FILTER (
+				WHERE prediction = true
+			) AS fraudulent,
+
+			COUNT(*) FILTER (
+				WHERE decision = 'REVIEW'
+			) AS review,
+
+			COUNT(*) FILTER (
+				WHERE decision = 'ALLOW'
+			) AS allowed,
+
 			COALESCE(
 				ROUND(
-					(COUNT(*) FILTER (WHERE prediction = true)::numeric * 100.0)
+					(
+						COUNT(*) FILTER (
+							WHERE prediction = true
+						)::numeric * 100
+					)
 					/
-					NULLIF(COUNT(*), 0),
+					NULLIF(COUNT(*),0),
 					2
 				),
 				0
 			) AS fraud_rate
+
 		FROM fraud_predictions
 		`,
 	).Scan(
@@ -148,8 +180,7 @@ func (r *FraudPredictionRepository) GetDashboardSummary(
 	)
 
 	return summary, err
-	}
-
+}
 
 func (r *FraudPredictionRepository) GetPredictionByTransactionID(
 	ctx context.Context,

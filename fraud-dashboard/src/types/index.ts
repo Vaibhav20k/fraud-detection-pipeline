@@ -29,10 +29,15 @@ export interface KpiMetric {
 export interface Prediction {
   id: string;
   user: string;
+
   /** Risk probability in the range 0..1. */
   probability: number;
+
   decision: Decision;
+
   time?: string;
+
+  riskFlags: string[];
 }
 
 export type LogLevel = "info" | "success" | "warning" | "alert" | "muted";

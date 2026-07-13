@@ -2,10 +2,9 @@ package generator
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"time"
-
-	"github.com/google/uuid"
 
 	"github.com/Vaibhav20k/fintech-pipeline/transaction-simulator/internal/models"
 )
@@ -26,63 +25,56 @@ var merchants = []struct {
 	{"HP Petrol", "FUEL"},
 }
 
-var paymentMethods = []string{
-	"UPI",
-	"CARD",
-	"NET_BANKING",
-}
-
-var cities = []string{
-	"Delhi",
-	"Noida",
-	"Gurgaon",
-	"Mumbai",
-	"Bangalore",
-	"Hyderabad",
-}
-
 func Generate() models.Transaction {
+
+	user := RandomUser()
 
 	merchant := merchants[rand.Intn(len(merchants))]
 
-	return models.Transaction{
+	amount := user.AverageAmount +
+		(rand.Float64()*0.4-0.2)*user.AverageAmount
 
-		UserID: uuid.New().String(),
-
-		Timestamp: time.Now().Format(time.RFC3339),
-
-		Amount: float64(rand.Intn(5000) + 100),
-
-		Currency: "INR",
-
-		TransactionType: "PURCHASE",
-
-		PaymentMethod: paymentMethods[rand.Intn(len(paymentMethods))],
-
-		PaymentIdentifier: fmt.Sprintf(
-			"user%d@upi",
-			rand.Intn(9000)+1000,
-		),
-
-		Merchant: merchant.Name,
-
-		MerchantCategory: merchant.Category,
-
-		ReceiverAccount: fmt.Sprintf(
-			"ACC%d",
-			rand.Intn(999999),
-		),
-
-		Location: cities[rand.Intn(len(cities))],
-
-		IPAddress: fmt.Sprintf(
-			"192.168.1.%d",
-			rand.Intn(255),
-		),
-
-		DeviceID: fmt.Sprintf(
-			"device_%03d",
-			rand.Intn(100),
-		),
+	if amount < 100 {
+		amount = 100
 	}
+
+	tx := models.Transaction{
+
+	UserID: user.ID,
+
+	Timestamp: time.Now().Format(time.RFC3339),
+
+	Amount: math.Round(amount*100) / 100,
+
+	Currency: "INR",
+
+	TransactionType: "PURCHASE",
+
+	PaymentMethod: user.PreferredPayment,
+
+	PaymentIdentifier: fmt.Sprintf(
+		"user_%s@upi",
+		user.ID[:8],
+	),
+
+	Merchant: merchant.Name,
+
+	MerchantCategory: merchant.Category,
+
+	ReceiverAccount: fmt.Sprintf(
+		"ACC%d",
+		rand.Intn(999999),
+	),
+
+	Location: user.HomeCity,
+
+	IPAddress: user.IPAddress,
+
+	DeviceID: user.DeviceID,
+	}
+
+	InjectFraud(&tx)
+
+	return tx
+
 }

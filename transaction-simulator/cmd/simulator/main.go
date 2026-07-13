@@ -12,6 +12,7 @@ import (
 func main() {
 
 	rand.Seed(time.Now().UnixNano())
+	generator.InitUsers(1000)
 
 	api := client.New("http://localhost:8080")
 
