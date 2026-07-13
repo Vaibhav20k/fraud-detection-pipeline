@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/config"
-	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/logger"
+	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/handler/logger"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/server"
 )
 

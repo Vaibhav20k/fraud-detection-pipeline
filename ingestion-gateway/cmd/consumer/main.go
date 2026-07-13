@@ -4,7 +4,9 @@ import (
 	"log"
 
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/config"
+	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/decision"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/kafka"
+	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/ml"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/postgres"
 )
 
@@ -26,12 +28,17 @@ func main() {
 	historyRepo := postgres.NewHistoryRepository(db)
 	predictionRepo := postgres.NewFraudPredictionRepository(db)
 
+	mlClient := ml.NewClient("http://localhost:8000")
+	engine := decision.NewEngine()
+
 	consumer, err := kafka.NewConsumer(
 		cfg.KafkaBrokers,
 		cfg.KafkaTopic,
 		baselineRepo,
 		historyRepo,
 		predictionRepo,
+		mlClient,
+		engine,
 	)
 	if err != nil {
 		log.Fatal(err)
