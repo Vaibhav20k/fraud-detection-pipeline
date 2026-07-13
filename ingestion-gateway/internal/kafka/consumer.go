@@ -6,6 +6,8 @@ import (
 	"github.com/IBM/sarama"
 
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/repository"
+	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/decision"
+	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/ml"
 )
 
 type Consumer struct {
@@ -16,7 +18,10 @@ type Consumer struct {
 	historyRepo  repository.HistoryRepository
 
 	predictionRepo repository.FraudPredictionRepository
-}
+
+	mlClient *ml.Client
+	engine   *decision.Engine
+}	
 
 func NewConsumer(
 	brokers []string,
@@ -24,6 +29,8 @@ func NewConsumer(
 	baselineRepo repository.BaselineRepository,
 	historyRepo repository.HistoryRepository,
 	predictionRepo repository.FraudPredictionRepository,
+	mlClient *ml.Client,
+	engine *decision.Engine,
 ) (*Consumer, error) {
 
 	c, err := sarama.NewConsumer(
@@ -36,14 +43,17 @@ func NewConsumer(
 
 	log.Println("Kafka consumer connected.")
 		return &Consumer{
-		consumer: c,
-		topic: topic,
+			consumer: c,
+			topic: topic,
 
-		baselineRepo: baselineRepo,
-		historyRepo:  historyRepo,
+			baselineRepo: baselineRepo,
+			historyRepo: historyRepo,
 
-		predictionRepo: predictionRepo,
-	}, nil
+			predictionRepo: predictionRepo,
+
+			mlClient: mlClient,
+			engine: engine,
+		}, nil
 }
 
 func (c *Consumer) Consume() error {

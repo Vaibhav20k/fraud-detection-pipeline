@@ -20,6 +20,7 @@ type ConsumerGroupHandler struct {
 	predictionRepo repository.FraudPredictionRepository
 
 	mlClient *ml.Client
+	engine   *decision.Engine
 }
 
 func (h *ConsumerGroupHandler) Setup(
@@ -84,10 +85,10 @@ func (h *ConsumerGroupHandler) ConsumeClaim(
 
 		} else {
 
-			engine := decision.NewEngine()
+			
 
-			decisionResult := engine.Decide(
-				prediction.FraudProbability,
+			decisionResult := h.engine.Decide(
+    			prediction.FraudProbability,
 			)
 
 			err = h.predictionRepo.SavePrediction(
@@ -175,8 +176,9 @@ func (c *Consumer) ConsumeGroup() error {
 	baselineRepo:  c.baselineRepo,
 	historyRepo:   c.historyRepo,
 	predictionRepo: c.predictionRepo,
-	mlClient:      ml.NewClient(""),
-	}
+	mlClient:      c.mlClient,
+	engine:        c.engine,
+}
 
 	log.Println("Joining consumer group...")
 
