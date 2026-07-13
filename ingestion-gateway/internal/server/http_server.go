@@ -3,9 +3,12 @@ package server
 import (
 	"fmt"
 	"net/http"
+
 	apihandler "github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/api/handler"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/config"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/postgres"
+	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/kafka"
+	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/service"
 )
 
 type HTTPServer struct {
@@ -24,6 +27,39 @@ func NewHTTPServer(
 	if err != nil {
 		panic(err)
 	}
+	// Transaction repository
+	transactionRepo := postgres.NewTransactionRepository(db)
+
+	// Baseline repositories
+	baselineRepo := postgres.NewBaselineRepository(db)
+	historyRepo := postgres.NewHistoryRepository(db)
+
+	// Baseline updater
+	baselineUpdater := service.NewBaselineUpdater(
+		historyRepo,
+		baselineRepo,
+	)
+
+	// Kafka producer
+	producer, err := kafka.NewProducer(
+		cfg.KafkaBrokers,
+		cfg.KafkaTopic,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	// Transaction service
+	transactionService := service.NewTransactionService(
+		transactionRepo,
+		producer,
+		baselineUpdater,
+	)
+
+	// REST transaction handler
+	transactionHandler := apihandler.NewTransactionHandler(
+		transactionService,
+	)
 
 	// Prediction repository
 	predictionRepo := postgres.NewFraudPredictionRepository(db)
@@ -33,13 +69,14 @@ func NewHTTPServer(
 		predictionRepo,
 	)
 
+	// Dashboard handler
 	dashboardHandler := apihandler.NewDashboardHandler(
-	predictionRepo,
+		predictionRepo,
 	)
 
 	mux.HandleFunc(
-	"/health",
-	apihandler.HealthHandler,
+		"/health",
+		apihandler.HealthHandler,
 	)
 
 	mux.HandleFunc(
@@ -48,19 +85,32 @@ func NewHTTPServer(
 	)
 
 	mux.HandleFunc(
-	"/api/dashboard/summary",
-	dashboardHandler.GetSummary,
+		"/api/dashboard/summary",
+		dashboardHandler.GetSummary,
 	)
 
+	mux.HandleFunc(
+    	"/api/dashboard/trend",
+    	dashboardHandler.GetTrend,
+	)
+	mux.HandleFunc(
+		"/api/transactions",
+		transactionHandler.SubmitTransaction,
+	)
+
+
+	// Wrap mux with CORS middleware
+	handler := corsMiddleware(mux)
 
 	return &HTTPServer{
 		server: &http.Server{
 			Addr:    ":" + cfg.HTTPPort,
-			Handler: mux,
+			Handler: handler,
 		},
 		port: cfg.HTTPPort,
 	}
 }
+
 func (h *HTTPServer) Start() error {
 
 	fmt.Printf(
@@ -73,4 +123,24 @@ func (h *HTTPServer) Start() error {
 
 func (h *HTTPServer) Stop() error {
 	return h.server.Close()
+}
+
+// --------------------
+// CORS Middleware
+// --------------------
+
+func corsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:5173")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }

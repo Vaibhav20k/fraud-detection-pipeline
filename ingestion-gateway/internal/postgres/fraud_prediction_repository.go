@@ -188,3 +188,50 @@ func (r *FraudPredictionRepository) GetPredictionByTransactionID(
 	return prediction, err
 }
 
+func (r *FraudPredictionRepository) GetFraudTrend(
+	ctx context.Context,
+) ([]repository.FraudTrendPoint, error) {
+
+	rows, err := r.db.QueryContext(
+		ctx,
+		`
+		SELECT
+			TO_CHAR(
+				DATE_TRUNC('hour', created_at),
+				'HH24:00'
+			) AS hour,
+
+			COUNT(*)
+
+		FROM fraud_predictions
+
+		GROUP BY DATE_TRUNC('hour', created_at)
+
+		ORDER BY DATE_TRUNC('hour', created_at)
+		`,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var trend []repository.FraudTrendPoint
+
+	for rows.Next() {
+
+		var point repository.FraudTrendPoint
+
+		if err := rows.Scan(
+			&point.Time,
+			&point.Count,
+		); err != nil {
+			return nil, err
+		}
+
+		trend = append(trend, point)
+	}
+
+	return trend, rows.Err()
+}

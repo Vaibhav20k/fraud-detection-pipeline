@@ -48,3 +48,29 @@ func (h *DashboardHandler) GetSummary(
 
 	json.NewEncoder(w).Encode(summary)
 }
+
+func (h *DashboardHandler) GetTrend(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+
+	trend, err := h.repository.GetFraudTrend(
+		context.Background(),
+	)
+
+	if err != nil {
+		http.Error(
+			w,
+			err.Error(),
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	w.Header().Set(
+		"Content-Type",
+		"application/json",
+	)
+
+	json.NewEncoder(w).Encode(trend)
+}

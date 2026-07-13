@@ -3,23 +3,14 @@ package repository
 import "context"
 
 type FraudPrediction struct {
-	TransactionID string
-
-	UserID string
-
-	FraudProbability float64
-
-	Prediction bool
-
-	Decision string
-
-	Threshold float64
-
-	ModelVersion string
-
-	RiskFlags []string 
-
-	
+	TransactionID    string   `json:"transactionID"`
+	UserID           string   `json:"userID"`
+	FraudProbability float64  `json:"fraudProbability"`
+	Prediction       bool     `json:"prediction"`
+	Decision         string   `json:"decision"`
+	Threshold        float64  `json:"threshold"`
+	ModelVersion     string   `json:"modelVersion"`
+	RiskFlags        []string `json:"riskFlags"`
 }
 
 
@@ -30,6 +21,11 @@ type DashboardSummary struct {
 	Allowed           int     `json:"allowed"`
 	FraudRate         float64 `json:"fraudRate"`
 	}
+
+type FraudTrendPoint struct {
+	Time  string `json:"time"`
+	Count int    `json:"count"`
+}
 
 
 type FraudPredictionRepository interface {
@@ -43,11 +39,17 @@ type FraudPredictionRepository interface {
 	) ([]FraudPrediction, error)
 
 	GetDashboardSummary(
-	ctx context.Context,
+		ctx context.Context,
 	) (DashboardSummary, error)
 
 	GetPredictionByTransactionID(
-	ctx context.Context,
-	transactionID string,
+		ctx context.Context,
+		transactionID string,
 	) (FraudPrediction, error)
+
+	GetFraudTrend(
+		ctx context.Context,
+	) ([]FraudTrendPoint, error)
 }
+
+
