@@ -6,6 +6,7 @@ import (
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/config"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/handler/logger"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/server"
+	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/metrics"
 )
 
 func main() {
@@ -16,18 +17,43 @@ func main() {
 		log.Fatalf("configuration error: %v", err)
 	}
 
+	// Initialize Prometheus metrics
+	metrics.Init()
+
 	// Initialize logger
 	appLogger := logger.New()
 
 	appLogger.Println("Configuration loaded successfully")
 
-	// Create gRPC server
+	// Create servers
 	grpcServer := server.New(cfg)
+	httpServer := server.NewHTTPServer(cfg)
 
-	appLogger.Printf("Starting gRPC server on port %s", cfg.ServerPort)
+	// Start HTTP server
+	go func() {
+		appLogger.Printf(
+			"Starting HTTP server on port %s",
+			cfg.HTTPPort,
+		)
 
-	// Start server
+		if err := httpServer.Start(); err != nil {
+			appLogger.Fatalf(
+				"HTTP Server failed: %v",
+				err,
+			)
+		}
+	}()
+
+	// Start gRPC server
+	appLogger.Printf(
+		"Starting gRPC server on port %s",
+		cfg.ServerPort,
+	)
+
 	if err := grpcServer.Start(); err != nil {
-		appLogger.Fatalf("Server failed: %v", err)
+		appLogger.Fatalf(
+			"gRPC Server failed: %v",
+			err,
+		)
 	}
 }

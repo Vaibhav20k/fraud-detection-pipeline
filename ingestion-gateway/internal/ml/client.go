@@ -41,6 +41,7 @@
 		Prediction       bool    `json:"prediction"`
 		Threshold        float64 `json:"threshold"`
 		ModelVersion     string  `json:"model_version"`
+		Confidence       float64 `json:"confidence"`
 	}
 
 	func (c *Client) Predict(
@@ -51,33 +52,33 @@
 		payload := map[string]any{
 			"amount": vector.Amount,
 
-			"transaction_type": vector.TransactionType,
-
-			"merchant_category": vector.MerchantCategory,
-
-			"location": vector.Location,
-
-			"device_used": vector.DeviceID,
-
 			"payment_channel": vector.PaymentMethod,
 
 			"time_since_last_transaction": vector.TimeSinceLastTransaction,
 
-			"spending_deviation_score": vector.AmountDeviation,
-
 			"velocity_score": vector.TransactionVelocity1H,
 
-			"geo_anomaly_score": vector.LocationRiskScore,
+			"spending_deviation_score": vector.AmountDeviation,
+
+			"is_first_transaction": 0,
 
 			"hour": vector.HourOfDay,
 
 			"day_of_week": vector.DayOfWeek,
 
-			"month": 1,
+			"month": int(time.Now().Month()),
 
 			"is_weekend": boolToInt(vector.IsWeekend),
 
-			"is_first_transaction": 0,
+			"is_cross_bank_transfer": 0,
+
+			"is_cross_currency_transfer": 0,
+
+			"is_new_receiver": boolToInt(vector.NewMerchant),
+
+			"is_new_bank": 0,
+
+			"is_new_payment_format": boolToInt(vector.PaymentMethodChanged),
 		}
 
 		body, err := json.Marshal(payload)

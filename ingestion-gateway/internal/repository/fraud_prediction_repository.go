@@ -6,6 +6,7 @@ type FraudPrediction struct {
 	TransactionID    string   `json:"transactionID"`
 	UserID           string   `json:"userID"`
 	FraudProbability float64  `json:"fraudProbability"`
+	Confidence       float64  `json:"Confidence"`
 	Prediction       bool     `json:"prediction"`
 	Decision         string   `json:"decision"`
 	Threshold        float64  `json:"threshold"`

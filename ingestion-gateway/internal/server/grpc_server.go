@@ -7,6 +7,7 @@ import (
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/config"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/handler"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/kafka"
+	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/ml"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/postgres"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/service"
 
@@ -34,6 +35,9 @@ func New(cfg *config.Config) *GRPCServer {
 	// Primary transaction repository
 	transactionRepo := postgres.NewTransactionRepository(db)
 
+	// Anomaly repository
+	anomalyRepo := postgres.NewAnomalyRepository(db)
+
 	// Baseline repositories
 	baselineRepo := postgres.NewBaselineRepository(db)
 	historyRepo := postgres.NewHistoryRepository(db)
@@ -43,6 +47,9 @@ func New(cfg *config.Config) *GRPCServer {
 		historyRepo,
 		baselineRepo,
 	)
+
+	// ML Client
+	mlClient := ml.NewClient("")
 
 	// Kafka producer
 	producer, err := kafka.NewProducer(
@@ -54,12 +61,15 @@ func New(cfg *config.Config) *GRPCServer {
 	}
 
 	svc := service.NewTransactionService(
-	transactionRepo,
-	producer,
-	baselineUpdater,
+		transactionRepo,
+		anomalyRepo,
+		baselineRepo,
+		historyRepo,
+		producer,
+		baselineUpdater,
+		mlClient,
 	)
-
-	// Handler
+		// Handler
 	transactionHandler := handler.NewTransactionHandler(svc)
 
 	pb.RegisterTransactionServiceServer(

@@ -42,8 +42,21 @@ type TransactionEvent struct {
 	DeviceID string `json:"device_id"`
 
 	// ==========================================================
+	// ML Prediction
+	// ==========================================================
+
+	FraudProbability float64 `json:"fraud_probability"`
+
+	IsFraud bool `json:"is_fraud"`
+
+	ModelName string `json:"model_name"`
+
+	ModelVersion string `json:"model_version"`
+
+	// ==========================================================
 	// Status
 	// ==========================================================
 
 	Status string `json:"status"`
+	RetryCount int `json:"retry_count"`
 }

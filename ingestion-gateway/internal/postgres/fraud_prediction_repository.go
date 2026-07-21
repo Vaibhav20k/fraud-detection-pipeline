@@ -41,6 +41,7 @@ func (r *FraudPredictionRepository) SavePrediction(
 			transaction_id,
 			user_id,
 			fraud_probability,
+			confidence,
 			prediction,
 			decision,
 			threshold,
@@ -49,12 +50,13 @@ func (r *FraudPredictionRepository) SavePrediction(
 		)
 		VALUES
 		(
-			$1,$2,$3,$4,$5,$6,$7,$8
+			$1,$2,$3,$4,$5,$6,$7,$8,$9
 		)
 		`,
 		prediction.TransactionID,
 		prediction.UserID,
 		prediction.FraudProbability,
+		prediction.Confidence,
 		prediction.Prediction,
 		prediction.Decision,
 		prediction.Threshold,
@@ -76,6 +78,7 @@ func (r *FraudPredictionRepository) GetAllPredictions(
 			transaction_id,
 			user_id,
 			fraud_probability,
+			confidence,
 			prediction,
 			decision,
 			threshold,
@@ -214,6 +217,7 @@ func (r *FraudPredictionRepository) GetPredictionByTransactionID(
 		&prediction.Threshold,
 		&prediction.ModelVersion,
 		&prediction.RiskFlags,
+		&prediction.Confidence,
 	)
 
 	return prediction, err

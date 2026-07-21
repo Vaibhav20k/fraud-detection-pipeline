@@ -3,12 +3,16 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/metrics"
 	apihandler "github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/api/handler"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/config"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/postgres"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/kafka"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/service"
+	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/ml"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type HTTPServer struct {
@@ -30,6 +34,9 @@ func NewHTTPServer(
 	// Transaction repository
 	transactionRepo := postgres.NewTransactionRepository(db)
 
+	// Anomaly repository
+	anomalyRepo := postgres.NewAnomalyRepository(db)
+
 	// Baseline repositories
 	baselineRepo := postgres.NewBaselineRepository(db)
 	historyRepo := postgres.NewHistoryRepository(db)
@@ -48,12 +55,20 @@ func NewHTTPServer(
 	if err != nil {
 		panic(err)
 	}
+	
+
+	// ML Client
+	mlClient := ml.NewClient("")
 
 	// Transaction service
 	transactionService := service.NewTransactionService(
 		transactionRepo,
+		anomalyRepo,
+		baselineRepo,
+		historyRepo,
 		producer,
 		baselineUpdater,
+		mlClient,
 	)
 
 	// REST transaction handler
@@ -78,6 +93,10 @@ func NewHTTPServer(
 		"/health",
 		apihandler.HealthHandler,
 	)
+	mux.Handle(
+		"/metrics",
+		promhttp.Handler(),
+	)
 
 	mux.HandleFunc(
 		"/api/predictions",
@@ -99,8 +118,10 @@ func NewHTTPServer(
 	)
 
 
-	// Wrap mux with CORS middleware
-	handler := corsMiddleware(mux)
+	// Wrap mux with Prometheus metrics and CORS middleware
+	handler := corsMiddleware(
+		metricsMiddleware(mux),
+	)
 
 	return &HTTPServer{
 		server: &http.Server{
@@ -123,6 +144,45 @@ func (h *HTTPServer) Start() error {
 
 func (h *HTTPServer) Stop() error {
 	return h.server.Close()
+}
+
+type statusRecorder struct {
+	http.ResponseWriter
+	status int
+}
+
+func (r *statusRecorder) WriteHeader(code int) {
+	r.status = code
+	r.ResponseWriter.WriteHeader(code)
+}
+
+func metricsMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		start := time.Now()
+
+		rec := &statusRecorder{
+			ResponseWriter: w,
+			status:         http.StatusOK,
+		}
+
+		next.ServeHTTP(rec, r)
+
+		metrics.HTTPRequestsTotal.
+			WithLabelValues(
+				r.Method,
+				r.URL.Path,
+				fmt.Sprintf("%d", rec.status),
+			).
+			Inc()
+
+		metrics.HTTPRequestDuration.
+			WithLabelValues(
+				r.Method,
+				r.URL.Path,
+			).
+			Observe(time.Since(start).Seconds())
+	})
 }
 
 // --------------------
