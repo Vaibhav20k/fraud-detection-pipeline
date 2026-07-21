@@ -1,0 +1,6 @@
+{
+    "model": "xgboost",
+    "version": "v2",
+    "threshold": 0.95,
+    "roc_auc": 0.9891
+}

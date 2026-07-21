@@ -1,0 +1,9 @@
+{
+    "model": "xgboost",
+    "version": "hi_li_small_v1",
+    "threshold": 0.9867,
+    "roc_auc": 0.9782481366025456,
+    "pr_auc": 0.34400005346483903,
+    "features": 15,
+    "dataset": "HI-Small + LI-Small"
+}
