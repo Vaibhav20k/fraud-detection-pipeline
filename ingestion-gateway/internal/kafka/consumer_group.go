@@ -97,6 +97,7 @@ func (h *ConsumerGroupHandler) ConsumeClaim(
 				TransactionID:    featureVector.TransactionID,
 				UserID:           featureVector.UserID,
 				FraudProbability: prediction.FraudProbability,
+				Confidence:       prediction.Confidence,
 				Prediction:       prediction.Prediction,
 				Decision:         string(decisionResult),
 				Threshold:        prediction.Threshold,
