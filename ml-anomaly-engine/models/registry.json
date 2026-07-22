@@ -1,16 +1,72 @@
 {
-    "active_model": "saved_models",
-    "models": {
-        "saved_models": {
+    "active_model": "xgboost_v2",
+
+    "traffic_split": {
+        "xgboost_v2": 100
+    },
+
+    "models": [
+        {
+            "model_id": "xgboost_v2",
             "version": "2.0.0",
-            "description": "High imbalance small dataset XGBoost model",
+            "algorithm": "XGBoost",
+            "status": "ACTIVE",
+            "description": "High imbalance fraud detection model",
+            "path": "models/saved_models_v2",
+            "artifacts": {
+                "model": "xgboost_hi_li_small.pkl",
+                "encoder": "payment_channel_encoder_hi_li_small.pkl",
+                "metadata": "xgboost_metadata_hi_li_small.json"
+            },
+            "dataset_version": "transactions_v1",
+            "feature_schema_version": "v1",
+            "training_run_id": "train_20260721_001",
+            "created_at": "2026-07-21",
             "updated_at": "2026-07-21",
+            "metrics": {
+                "accuracy": 0.0,
+                "precision": 0.0,
+                "recall": 0.0,
+                "f1_score": 0.0,
+                "roc_auc": 0.0
+            },
             "training_stats": {
                 "mean_amount": 0.0,
                 "fraud_rate": 0.0,
                 "mean_confidence": 0.0,
                 "mean_fraud_probability": 0.0
             }
+        },
+        {
+            "model_id": "xgboost_v3",
+            "version": "3.0.0",
+            "algorithm": "XGBoost",
+            "description": "Next generation model",
+            "status": "INACTIVE",
+            "path": "models/saved_models_v2",
+            "artifacts": {
+                "model": "xgboost_hi_li_small.pkl",
+                "encoder": "payment_channel_encoder_hi_li_small.pkl",
+                "metadata": "xgboost_metadata_hi_li_small.json"
+            },
+            "dataset_version": "transactions_v2",
+            "feature_schema_version": "v2",
+            "training_run_id": "train_20260723_001",
+            "created_at": "2026-07-23",
+            "updated_at": "2026-07-23",
+            "metrics": {
+                "accuracy": 0.96,
+                "precision": 0.91,
+                "recall": 0.88,
+                "f1_score": 0.89,
+                "roc_auc": 0.98
+            },
+            "training_stats": {
+                "mean_amount": 1025,
+                "fraud_rate": 0.012,
+                "mean_confidence": 0.95,
+                "mean_fraud_probability": 0.03
+            }
         }
-    }
+    ]
 }

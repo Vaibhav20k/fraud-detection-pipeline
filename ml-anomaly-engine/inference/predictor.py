@@ -4,53 +4,59 @@ import pandas as pd
 
 from pathlib import Path
 
+from monitoring.drift_monitor import DriftMonitor
+from services.model_registry import ModelRegistry
+from services.feature_validator import FeatureValidator
+from services.explainer import FraudExplainer
+from services.prediction_logger import PredictionLogger
+
 # ==========================================================
 # Project Paths
 # ==========================================================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-MODELS_ROOT = BASE_DIR / "models"
+registry = ModelRegistry(
+    BASE_DIR / "models" / "registry.json"
+)
 
-REGISTRY_PATH = MODELS_ROOT / "registry.json"
+MODEL_INFO = registry.get_active_model()
 
-with open(REGISTRY_PATH, "r") as f:
-    REGISTRY = json.load(f)
-
-ACTIVE_MODEL = REGISTRY["active_model"]
-
-MODEL_DIR = MODELS_ROOT / ACTIVE_MODEL
-
-MODEL_INFO = REGISTRY["models"][ACTIVE_MODEL]
-
-# ==========================================================
-# Load Artifacts
-# ==========================================================
+MODEL_DIR = BASE_DIR / MODEL_INFO["path"]
 
 print("=" * 60)
 print("Loading ML Artifacts...")
 print("=" * 60)
 
+# ==========================================================
+# Load Model Artifacts
+# ==========================================================
+
 MODEL = joblib.load(
-    MODEL_DIR / "xgboost_hi_li_small.pkl"
+    MODEL_DIR / MODEL_INFO["artifacts"]["model"]
 )
 
 ENCODER = joblib.load(
-    MODEL_DIR / "payment_channel_encoder_hi_li_small.pkl"
+    MODEL_DIR / MODEL_INFO["artifacts"]["encoder"]
 )
 
 with open(
-    MODEL_DIR / "xgboost_metadata_hi_li_small.json",
+    MODEL_DIR / MODEL_INFO["artifacts"]["metadata"],
     "r",
 ) as f:
     METADATA = json.load(f)
 
 THRESHOLD = METADATA["threshold"]
-
 MODEL_VERSION = MODEL_INFO["version"]
+DRIFT_MONITOR = DriftMonitor()
 
-print(f"Model Loaded : {MODEL_VERSION}")
+print(f"Model Loaded : {MODEL_INFO['model_id']}")
+print(f"Version      : {MODEL_VERSION}")
 print(f"Threshold    : {THRESHOLD}")
+
+# ==========================================================
+# Payment Channel Mapping
+# ==========================================================
 
 PAYMENT_CHANNEL_MAPPING = {
     "CARD": "Credit Card",
@@ -65,12 +71,19 @@ PAYMENT_CHANNEL_MAPPING = {
 
 def predict(transaction: dict):
 
+    # Validate incoming transaction
+    FeatureValidator.validate(transaction)
+
+    DRIFT_MONITOR.update(transaction)
+
+    reason_codes = FraudExplainer.generate_reason_codes(transaction)
+
     dataframe = pd.DataFrame([transaction])
 
     dataframe["payment_channel"] = (
-    dataframe["payment_channel"]
-    .map(PAYMENT_CHANNEL_MAPPING)
-    .fillna(dataframe["payment_channel"])
+        dataframe["payment_channel"]
+        .map(PAYMENT_CHANNEL_MAPPING)
+        .fillna(dataframe["payment_channel"])
     )
 
     dataframe["payment_channel"] = ENCODER.transform(
@@ -82,12 +95,13 @@ def predict(transaction: dict):
     )[0][1]
 
     prediction = probability >= THRESHOLD
+
     confidence = max(
         probability,
         1 - probability,
     )
 
-    return {
+    response = {
         "fraud_probability": round(
             float(probability),
             4,
@@ -99,4 +113,12 @@ def predict(transaction: dict):
         "prediction": bool(prediction),
         "threshold": THRESHOLD,
         "model_version": MODEL_VERSION,
-    } 
+        "reason_codes": reason_codes,
+    }
+
+    PredictionLogger.log(
+        transaction,
+        response,
+    )
+
+    return response
