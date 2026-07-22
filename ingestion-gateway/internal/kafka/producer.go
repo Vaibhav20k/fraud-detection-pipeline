@@ -24,6 +24,7 @@ func NewProducer(
 	config := sarama.NewConfig()
 
 	config.Version = sarama.V3_5_0_0
+	config.Producer.Partitioner = sarama.NewHashPartitioner
 
 	config.Producer.RequiredAcks = sarama.WaitForAll
 	config.Producer.Return.Successes = true

@@ -127,6 +127,61 @@ services:
     networks:
       - fintech-network
 
+  # Ingestion Gateway
+  ingestion-gateway:
+    build:
+      context: ./ingestion-gateway
+      dockerfile: Dockerfile
+    
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+    environment:
+      SERVER_PORT: 50051
+      HTTP_PORT: 8080
+
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: fintech_user
+      DB_PASSWORD: dev_password_change_in_prod
+      DB_NAME: fintech_db
+
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+
+      KAFKA_BROKERS: kafka:29092
+      KAFKA_TOPIC: transactions.raw
+
+    expose:
+    - "8080"
+    - "50051"
+
+    networks:
+      - fintech-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: fintech-nginx
+
+    depends_on:
+      - ingestion-gateway
+
+    ports:
+      - "80:80"
+
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
+    networks:
+      - fintech-network
+
 networks:
   fintech-network:
     driver: bridge

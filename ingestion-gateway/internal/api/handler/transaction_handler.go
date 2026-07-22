@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"context"
+	
 	"encoding/json"
 	"net/http"
 
@@ -48,8 +48,11 @@ func (h *TransactionHandler) SubmitTransaction(
 		return
 	}
 
+	idempotencyKey := r.Header.Get("Idempotency-Key")
+
 	resp, err := h.service.SubmitTransaction(
-		context.Background(),
+		r.Context(),
+		idempotencyKey,
 		&req,
 	)
 

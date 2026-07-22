@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+	"context"
 
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/metrics"
 	apihandler "github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/api/handler"
@@ -13,6 +14,7 @@ import (
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/service"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/ml"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/middleware"
 )
 
 type HTTPServer struct {
@@ -90,9 +92,15 @@ func NewHTTPServer(
 	)
 
 	mux.HandleFunc(
-		"/health",
-		apihandler.HealthHandler,
+		"/health/live",
+		apihandler.LiveHandler,
 	)
+
+	mux.HandleFunc(
+		"/health/ready",
+		apihandler.ReadyHandler,
+	)
+	
 	mux.Handle(
 		"/metrics",
 		promhttp.Handler(),
@@ -120,7 +128,9 @@ func NewHTTPServer(
 
 	// Wrap mux with Prometheus metrics and CORS middleware
 	handler := corsMiddleware(
-		metricsMiddleware(mux),
+		metricsMiddleware(
+			middleware.RateLimit(mux),
+		),
 	)
 
 	return &HTTPServer{
@@ -142,8 +152,8 @@ func (h *HTTPServer) Start() error {
 	return h.server.ListenAndServe()
 }
 
-func (h *HTTPServer) Stop() error {
-	return h.server.Close()
+func (h *HTTPServer) Stop(ctx context.Context) error {
+	return h.server.Shutdown(ctx)
 }
 
 type statusRecorder struct {

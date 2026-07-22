@@ -5,5 +5,16 @@
     "roc_auc": 0.9782481366025456,
     "pr_auc": 0.34400005346483903,
     "features": 15,
-    "dataset": "HI-Small + LI-Small"
+    "dataset": "HI-Small + LI-Small",
+
+    "validation": {
+        "allowed_payment_channels": [
+            "UPI",
+            "CARD",
+            "NET_BANKING",
+            "WALLET"
+        ],
+        "min_amount": 1,
+        "max_amount": 10000000
+    }
 }

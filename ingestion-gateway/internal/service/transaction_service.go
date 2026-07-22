@@ -11,6 +11,7 @@ import (
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/kafka"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/ml"
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/repository"
+	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/idempotency"
 
 	pb "github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/proto"
 )
@@ -49,9 +50,34 @@ func NewTransactionService(
 
 func (s *TransactionService) SubmitTransaction(
 	ctx context.Context,
+	idempotencyKey string,
 	req *pb.TransactionRequest,
 ) (*pb.TransactionResponse, error) {
 
+
+	if idempotencyKey != "" {
+
+		var cachedResponse pb.TransactionResponse
+
+		found, err := idempotency.Exists(
+			ctx,
+			idempotencyKey,
+			&cachedResponse,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		if found {
+			log.Printf(
+				"Idempotency hit: %s",
+				idempotencyKey,
+			)
+
+			return &cachedResponse, nil
+		}
+	}
 	// ---------------------------------------------------------
 	// Step 1: Persist transaction
 	// ---------------------------------------------------------
@@ -114,7 +140,19 @@ func (s *TransactionService) SubmitTransaction(
 
 	predictionStart := time.Now()
 
-	prediction, err := s.mlClient.Predict(ctx, vector)
+		result, err := ml.PredictionBreaker.Execute(func() (interface{}, error) {
+		return s.mlClient.Predict(ctx, vector)
+	})
+
+	metrics.MLPredictionDuration.Observe(
+		time.Since(predictionStart).Seconds(),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	prediction := result.(*ml.PredictionResponse)	
 
 	metrics.MLPredictionDuration.Observe(
 		time.Since(predictionStart).Seconds(),
@@ -170,7 +208,7 @@ func (s *TransactionService) SubmitTransaction(
 	log.Printf("Fraud Score    : %.4f", event.FraudProbability)
 	log.Printf("Is Fraud       : %v", event.IsFraud)
 
-	if err := s.producer.PublishJSON(transactionID, event); err != nil {
+	if err := s.producer.PublishJSON(req.UserId, event); err != nil {
 		log.Printf("❌ Kafka publish failed: %v", err)
 		return nil, err
 	}
@@ -182,9 +220,25 @@ func (s *TransactionService) SubmitTransaction(
 	// Step 8: Return Response
 	// ---------------------------------------------------------
 
-	return &pb.TransactionResponse{
+	response := &pb.TransactionResponse{
 		TransactionId: transactionID,
 		Status:        "RECEIVED",
 		Message:       "Transaction stored successfully.",
-	}, nil
+	}
+
+	if idempotencyKey != "" {
+
+		if err := idempotency.Save(
+			ctx,
+			idempotencyKey,
+			*response,
+		); err != nil {
+			log.Printf(
+				"Failed to cache idempotent response: %v",
+				err,
+			)
+		}
+	}
+
+	return response, nil
 }

@@ -1,17 +1,18 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
+
+	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/cache"
 )
 
 type HealthResponse struct {
-	Status  string `json:"status"`
-	Service string `json:"service"`
-	Version string `json:"version"`
+	Status string `json:"status"`
 }
 
-func HealthHandler(
+func LiveHandler(
 	w http.ResponseWriter,
 	r *http.Request,
 ) {
@@ -21,11 +22,42 @@ func HealthHandler(
 		"application/json",
 	)
 
-	response := HealthResponse{
-		Status:  "healthy",
-		Service: "fintech-fraud-api",
-		Version: "v1",
+	json.NewEncoder(w).Encode(
+		HealthResponse{
+			Status: "UP",
+		},
+	)
+}
+
+func ReadyHandler(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
+
+	ctx := context.Background()
+
+	// Redis readiness check
+	client := cache.GetRedisClient()
+
+	if err := client.Ping(ctx).Err(); err != nil {
+
+		http.Error(
+			w,
+			"Redis unavailable",
+			http.StatusServiceUnavailable,
+		)
+
+		return
 	}
 
-	_ = json.NewEncoder(w).Encode(response)
+	w.Header().Set(
+		"Content-Type",
+		"application/json",
+	)
+
+	json.NewEncoder(w).Encode(
+		HealthResponse{
+			Status: "READY",
+		},
+	)
 }

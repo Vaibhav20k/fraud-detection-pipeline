@@ -1,11 +1,11 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 
 	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/repository"
+	"github.com/Vaibhav20k/fintech-pipeline/ingestion-gateway/internal/cache"
 )
 
 type DashboardHandler struct {
@@ -26,10 +26,27 @@ func (h *DashboardHandler) GetSummary(
 	r *http.Request,
 ) {
 
-	summary, err := h.repository.GetDashboardSummary(
-		context.Background(),
+	ctx := r.Context()
+
+	var summary any
+
+	found, err := cache.GetDashboardSummary(
+		ctx,
+		&summary,
 	)
 
+	if err == nil && found {
+
+		w.Header().Set(
+			"Content-Type",
+			"application/json",
+		)
+
+		json.NewEncoder(w).Encode(summary)
+		return
+	}
+
+	summary, err = h.repository.GetDashboardSummary(ctx)
 	if err != nil {
 
 		http.Error(
@@ -40,6 +57,11 @@ func (h *DashboardHandler) GetSummary(
 
 		return
 	}
+
+	_ = cache.SetDashboardSummary(
+		ctx,
+		summary,
+	)
 
 	w.Header().Set(
 		"Content-Type",
@@ -54,18 +76,42 @@ func (h *DashboardHandler) GetTrend(
 	r *http.Request,
 ) {
 
-	trend, err := h.repository.GetFraudTrend(
-		context.Background(),
+	ctx := r.Context()
+
+	var trend any
+
+	found, err := cache.GetDashboardTrend(
+		ctx,
+		&trend,
 	)
 
+	if err == nil && found {
+
+		w.Header().Set(
+			"Content-Type",
+			"application/json",
+		)
+
+		json.NewEncoder(w).Encode(trend)
+		return
+	}
+
+	trend, err = h.repository.GetFraudTrend(ctx)
 	if err != nil {
+
 		http.Error(
 			w,
 			err.Error(),
 			http.StatusInternalServerError,
 		)
+
 		return
 	}
+
+	_ = cache.SetDashboardTrend(
+		ctx,
+		trend,
+	)
 
 	w.Header().Set(
 		"Content-Type",

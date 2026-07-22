@@ -28,5 +28,9 @@ func (h *TransactionHandler) SubmitTransaction(
 	req *pb.TransactionRequest,
 ) (*pb.TransactionResponse, error) {
 
-	return h.service.SubmitTransaction(ctx, req)
+	return h.service.SubmitTransaction(
+		ctx,
+		"",
+		req,
+	)
 }

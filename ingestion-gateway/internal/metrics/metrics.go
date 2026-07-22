@@ -4,6 +4,14 @@ import "github.com/prometheus/client_golang/prometheus"
 
 var (
 
+	RateLimitRejected = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "gateway_rate_limit_rejected_total",
+			Help: "Total number of requests rejected by the rate limiter.",
+		},
+		[]string{"path"},
+	)
+
 	HTTPRequestsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Name: "http_requests_total",
@@ -85,6 +93,8 @@ var (
 func Init() {
 
 	prometheus.MustRegister(
+
+		RateLimitRejected,
 
 		HTTPRequestsTotal,
 		HTTPRequestDuration,
