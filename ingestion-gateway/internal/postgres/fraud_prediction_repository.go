@@ -106,6 +106,7 @@ func (r *FraudPredictionRepository) GetAllPredictions(
 			&p.TransactionID,
 			&p.UserID,
 			&p.FraudProbability,
+			&p.Confidence,
 			&p.Prediction,
 			&p.Decision,
 			&p.Threshold,
