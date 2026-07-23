@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import KPICard from "@/components/cards/KPICard";
 import FraudTrendChart from "@/components/charts/FraudTrendChart";
 import DecisionPieChart from "@/components/charts/DecisionPieChart";
@@ -23,6 +24,7 @@ const logs: LogEntry[] = [
 ];
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const { data, isLoading, error } = useDashboard();
 
   const {
@@ -44,17 +46,20 @@ export default function Dashboard() {
       title: "Total Trans.",
       value: isLoading ? "..." : String(data?.totalTransactions ?? 0),
       trend: { value: "+4.2%", tone: "positive" },
+      onClick: () => navigate("/transactions"),
     },
     {
       title: "Fraudulent",
       value: isLoading ? "..." : String(data?.fraudulent ?? 0),
       trend: { value: "+12", tone: "negative" },
       variant: "danger",
+      onClick: () => navigate("/risk-queue?decision=BLOCK"),
     },
     {
       title: "Review Queue",
       value: isLoading ? "..." : String(data?.review ?? 0),
       trend: { value: "Active", tone: "neutral" },
+      onClick: () => navigate("/risk-queue?decision=REVIEW"),
     },
     {
       title: "Fraud Rate",
@@ -62,11 +67,13 @@ export default function Dashboard() {
         ? "..."
         : `${(data?.fraudRate ?? 0).toFixed(2)}%`,
       trend: { value: "-0.3%", tone: "positive" },
+      onClick: () => navigate("/transactions"),
     },
     {
       title: "Allowed",
       value: isLoading ? "..." : String(data?.allowed ?? 0),
       trend: { value: "Live", tone: "positive" },
+      onClick: () => navigate("/transactions?decision=ALLOW"),
     },
     {
       title: "Active Model",
@@ -102,7 +109,7 @@ export default function Dashboard() {
       {/* Predictions + live logs */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-lg">
         <PredictionTable
-          data={predictionLoading ? [] : predictions}
+          data={predictionLoading ? [] : predictions.slice(0, 5)}
         />
         <LiveLogs logs={logs} />
       </div>
