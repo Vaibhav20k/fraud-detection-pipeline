@@ -9,7 +9,7 @@ import {
 } from "recharts";
 
 import Panel from "@/components/common/Panel";
-import { sentinel } from "@/lib/chart-theme";
+import { useSentinelTheme } from "@/lib/chart-theme";
 import { useTrend } from "@/hooks/useTrend";
 
 interface TooltipEntry {
@@ -65,6 +65,7 @@ type TrendPoint = {
 
 export default function FraudTrendChart() {
   const { data, isLoading, error } = useTrend();
+  const sentinel = useSentinelTheme();
 
   const trendData = (Array.isArray(data) ? data : []).map(
     (item: TrendPoint) => ({
