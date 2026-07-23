@@ -24,6 +24,7 @@ export interface KpiMetric {
   icon?: LucideIcon;
   /** Visual accent variant for the card surface. */
   variant?: "default" | "danger" | "model";
+  onClick?: () => void;
 }
 
 export interface Prediction {
