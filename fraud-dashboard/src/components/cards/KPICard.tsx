@@ -18,11 +18,14 @@ export default function KPICard({
   description,
   icon: Icon,
   variant = "default",
+  onClick,
 }: KpiMetric) {
   return (
     <div
+      onClick={onClick}
       className={cn(
-        "tonal-layer-1 p-md rounded-xl shadow-soft flex flex-col",
+        "tonal-layer-1 p-md rounded-xl shadow-soft flex flex-col transition-all",
+        onClick && "cursor-pointer hover:border hover:border-primary/40 hover:scale-[1.02]",
         variant === "danger" && "border-l-4 border-l-error",
         variant === "model" && "bg-surface-container-highest/30"
       )}
