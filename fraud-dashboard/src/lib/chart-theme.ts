@@ -1,12 +1,6 @@
-/**
- * Sentinel palette expressed as literal values for Recharts / SVG.
- *
- * Recharts paints SVG presentation attributes, which do not resolve CSS
- * `var()` — so chart strokes/fills need concrete colors. These mirror the
- * tokens defined in `src/index.css` (the single source of truth for the
- * rest of the UI) and exist only to satisfy the SVG rendering layer.
- */
-export const sentinel = {
+import { useTheme } from "@/context/ThemeContext";
+
+export const sentinelLight = {
   primary: "#99462a",
   onPrimary: "#ffffff",
   secondary: "#506358",
@@ -20,3 +14,25 @@ export const sentinel = {
   outlineVariant: "#dbc1b9",
   primaryContainer: "#d97757",
 } as const;
+
+export const sentinelDark = {
+  primary: "#F97316",
+  onPrimary: "#ffffff",
+  secondary: "#22C55E",
+  outline: "#2B3B55",
+  error: "#EF4444",
+  tertiaryContainer: "#FACC15",
+  surfaceContainerLow: "#172236",
+  surfaceContainerLowest: "#131C2E",
+  onSurface: "#F8FAFC",
+  onSurfaceVariant: "#94A3B8",
+  outlineVariant: "#2B3B55",
+  primaryContainer: "#EA580C",
+} as const;
+
+export const sentinel = sentinelLight;
+
+export function useSentinelTheme() {
+  const { theme } = useTheme();
+  return theme === "dark" ? sentinelDark : sentinelLight;
+}
