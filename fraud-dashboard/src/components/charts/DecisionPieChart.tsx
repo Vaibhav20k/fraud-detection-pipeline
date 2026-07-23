@@ -1,11 +1,10 @@
+import { useNavigate } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 
 import Panel from "@/components/common/Panel";
-import { sentinel } from "@/lib/chart-theme";
+import { useSentinelTheme } from "@/lib/chart-theme";
 import { cn } from "@/lib/utils";
 import { useDecisionStats } from "@/hooks/useDecisionStats";
-
-
 
 const histogram = [
   { h: "h-[10%]", c: "bg-tertiary-container/20" },
@@ -22,6 +21,19 @@ const histogram = [
 
 export default function DecisionPieChart() {
   const { stats } = useDecisionStats();
+  const navigate = useNavigate();
+  const sentinel = useSentinelTheme();
+
+  const handleDecisionClick = (decisionName: string) => {
+    const key = decisionName.toUpperCase();
+    if (key === "ALLOW") {
+      navigate("/transactions?decision=ALLOW");
+    } else if (key === "REVIEW") {
+      navigate("/risk-queue?decision=REVIEW");
+    } else if (key === "BLOCK") {
+      navigate("/risk-queue?decision=BLOCK");
+    }
+  };
 
   const pieData = [
     {
@@ -56,12 +68,12 @@ export default function DecisionPieChart() {
         </div>
       </Panel>
     );
-}
+  }
 
   return (
     <Panel
       title="Decision Distribution"
-      subtitle="Current volume by action type"
+      subtitle="Current volume by action type (click to filter)"
       className="lg:col-span-4"
       bodyClassName="p-lg flex flex-col"
     >
@@ -82,7 +94,12 @@ export default function DecisionPieChart() {
                 isAnimationActive={false}
               >
                 {pieData.map((e) => (
-                  <Cell key={e.name} fill={e.color} />
+                  <Cell
+                    key={e.name}
+                    fill={e.color}
+                    className="cursor-pointer hover:opacity-85 transition-opacity"
+                    onClick={() => handleDecisionClick(e.name)}
+                  />
                 ))}
               </Pie>
             </PieChart>
@@ -101,7 +118,8 @@ export default function DecisionPieChart() {
           {pieData.map((e) => (
             <div
               key={e.name}
-              className="flex justify-between items-center text-label-sm"
+              onClick={() => handleDecisionClick(e.name)}
+              className="flex justify-between items-center text-label-sm p-1 rounded hover:bg-surface-container-high cursor-pointer transition-colors"
             >
               <span className="flex items-center gap-sm">
                 <span
