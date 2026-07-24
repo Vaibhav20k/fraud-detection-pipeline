@@ -3,7 +3,7 @@ import KPICard from "@/components/cards/KPICard";
 import FraudTrendChart from "@/components/charts/FraudTrendChart";
 import DecisionPieChart from "@/components/charts/DecisionPieChart";
 import PredictionTable from "@/components/table/PredictionTable";
-import LiveLogs from "@/components/logs/LiveLogs";
+import LiveLogs from "@/components/log-viewer/LiveLogs";
 import type { KpiMetric, Prediction, LogEntry } from "@/types";
 
 import { useDashboard } from "../hooks/useDashboard";
